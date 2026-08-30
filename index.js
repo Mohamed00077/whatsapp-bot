@@ -2,12 +2,32 @@ const { makeWASocket, useMultiFileAuthState, DisconnectReason } = require("@whis
 const qrcode = require("qrcode-terminal");
 
 
+//Tableau de commande dynamique
+const commandes = {
+    ping: {
+        description: 'Vérifie que le bot répond',
+        execute: async (socket, remoteJid, args) => {
+            await socket.sendMessage(remoteJid, { text: 'Pong !' })
+        }
+    },
+    aide:{
+        description :"menu de commande disponible",
+        execute : async(socket, remoteJid, args)=>{
+            const liste = Object.entries(commandes).map(([nom,details])=>{
+                return `⚡${nom} - ${details.description}`
+            }).join('\n')
+            await socket.sendMessage(remoteJid, {text: liste})
+        }
+    }
+}
+
 //authentification, On utilise Bailleys une librairie whatsapp qui permet 
 //de se connecté à whatsapp 
 //authSate qui authentifie l'utilisateur depuis Bailleys et genère un QR code , une fois scanner on sauvegarde les identifiants pour ne plus scanner à chaque demarrage
 async function startBot() {
 
     const { state, saveCreds } = await useMultiFileAuthState('auth_info')
+
 
     const socket = makeWASocket({ auth: state })
     socket.ev.on('connection.update', (data) => {
@@ -24,31 +44,34 @@ async function startBot() {
         }
     })
 
+
     socket.ev.on('creds.update', saveCreds)
 
-    socket.ev.on('messages.upsert', async(data) => {
-        const { messages, type} = data
-        if(type !=='notify'){return}
+
+    socket.ev.on('messages.upsert', async (data) => {
+        const { messages, type } = data
+        if (type !== 'notify') { return }
         for (const message of messages) {
-            if (message.key.fromMe  || message.key.remoteJid === 'status@broadcast') {
+            if (message.key.fromMe || message.key.remoteJid === 'status@broadcast') {
                 continue
             }
             const texte = message.message?.conversation || message.message?.extendedTextMessage?.text
-            if(texte?.startsWith('⚡')){ 
-                const texteSanPrefixe =texte.slice(1)
-                const [commande,...arrgs] = texteSanPrefixe.split(' ')
+            if (texte?.startsWith('⚡')) {
+                const texteSanPrefixe = texte.slice(1)
+                const [commande, ...arrgs] = texteSanPrefixe.split(' ')
                 const commandeNormalisee = commande.toLowerCase()
                 console.log(commande, arrgs)
-                switch(commandeNormalisee){
-                    case 'ping':
-                        await socket.sendMessage(message.key.remoteJid, {text: 'Pong commande succès !'})
-                        break
-                    default:
-                        await socket.sendMessage(message.key.remoteJid, {text: 'Commande inconnue, tape ⚡aide pour voir les commandes disponibles'})
-    
 
+                const cmd = commandes[commandeNormalisee]
+                if(cmd){
+                    await cmd.execute(socket, message.key.remoteJid, arrgs)
+                }else{
+                    await socket.sendMessage(message.key.remoteJid, {text: 'Commande inconnue, tape ⚡aide pour voir les commandes disponibles'})
                 }
-                console.log(message.key.remoteJid, texte)}
+
+
+                console.log(message.key.remoteJid, texte)
+            }
         }
     })
 
