@@ -26,14 +26,17 @@ async function startBot() {
 
     socket.ev.on('creds.update', saveCreds)
 
-    socket.ev.on('messages.upsert', (data) => {
-        const { messages } = data
+    socket.ev.on('messages.upsert', async(data) => {
+        const { messages, type} = data
+        if(type !=='notify'){return}
         for (const message of messages) {
             if (message.key.fromMe  || message.key.remoteJid === 'status@broadcast') {
                 continue
             }
-            const texte = message.message.conversation || message.message.extendedTextMessage?.text
-            console.log(message.key.remoteJid, texte)
+            const texte = message.message?.conversation || message.message?.extendedTextMessage?.text
+            if(texte?.startsWith('⚡')){ 
+                await socket.sendMessage(message.key.remoteJid, {text: `Message venant du bot de Momo: ${texte}`})
+                console.log(message.key.remoteJid, texte)}
         }
     })
 
