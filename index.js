@@ -35,7 +35,19 @@ async function startBot() {
             }
             const texte = message.message?.conversation || message.message?.extendedTextMessage?.text
             if(texte?.startsWith('⚡')){ 
-                await socket.sendMessage(message.key.remoteJid, {text: `Message venant du bot de Momo: ${texte}`})
+                const texteSanPrefixe =texte.slice(1)
+                const [commande,...arrgs] = texteSanPrefixe.split(' ')
+                const commandeNormalisee = commande.toLowerCase()
+                console.log(commande, arrgs)
+                switch(commandeNormalisee){
+                    case 'ping':
+                        await socket.sendMessage(message.key.remoteJid, {text: 'Pong commande succès !'})
+                        break
+                    default:
+                        await socket.sendMessage(message.key.remoteJid, {text: 'Commande inconnue, tape ⚡aide pour voir les commandes disponibles'})
+    
+
+                }
                 console.log(message.key.remoteJid, texte)}
         }
     })
