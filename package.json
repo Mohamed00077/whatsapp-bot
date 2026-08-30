@@ -1,0 +1,27 @@
+{
+  "name": "whatsapp-bot",
+  "version": "1.0.0",
+  "description": "Bot WhatsApp pour géré les discussion et les groupes",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mohamed00077/whatsapp-bot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Mohamed00077/whatsapp-bot/issues"
+  },
+  "homepage": "https://github.com/Mohamed00077/whatsapp-bot#readme",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "better-sqlite3": "^13.0.3",
+    "pino": "^10.3.1",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
