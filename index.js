@@ -1,25 +1,8 @@
-const { makeWASocket, useMultiFileAuthState, DisconnectReason } = require("@whiskeysockets/baileys");
+const { makeWASocket, useMultiFileAuthState, DisconnectReason, downloadMediaMessage} = require("@whiskeysockets/baileys");
 const qrcode = require("qrcode-terminal");
-
-
-//Tableau de commande dynamique
-const commandes = {
-    ping: {
-        description: 'Vérifie que le bot répond',
-        execute: async (socket, remoteJid, args) => {
-            await socket.sendMessage(remoteJid, { text: 'Pong !' })
-        }
-    },
-    aide:{
-        description :"menu de commande disponible",
-        execute : async(socket, remoteJid, args)=>{
-            const liste = Object.entries(commandes).map(([nom,details])=>{
-                return `⚡${nom} - ${details.description}`
-            }).join('\n')
-            await socket.sendMessage(remoteJid, {text: liste})
-        }
-    }
-}
+const fs = require('fs')
+const path = require('path')
+const commandes = require('./commandes')
 
 //authentification, On utilise Bailleys une librairie whatsapp qui permet 
 //de se connecté à whatsapp 
