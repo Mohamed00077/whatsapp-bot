@@ -1,4 +1,4 @@
-const { makeWASocket, useMultiFileAuthState, DisconnectReason, downloadMediaMessage} = require("@whiskeysockets/baileys");
+const { makeWASocket, useMultiFileAuthState, DisconnectReason, downloadMediaMessage } = require("@whiskeysockets/baileys");
 const qrcode = require("qrcode-terminal");
 const fs = require('fs')
 const path = require('path')
@@ -30,7 +30,6 @@ async function startBot() {
 
     socket.ev.on('creds.update', saveCreds)
 
-
     socket.ev.on('messages.upsert', async (data) => {
         const { messages, type } = data
         if (type !== 'notify') { return }
@@ -46,14 +45,32 @@ async function startBot() {
                 console.log(commande, arrgs)
 
                 const cmd = commandes[commandeNormalisee]
-                if(cmd){
+                if (cmd) {
                     await cmd.execute(socket, message.key.remoteJid, arrgs)
-                }else{
-                    await socket.sendMessage(message.key.remoteJid, {text: 'Commande inconnue, tape ⚡aide pour voir les commandes disponibles'})
+                } else {
+                    await socket.sendMessage(message.key.remoteJid, { text: 'Commande inconnue, tape ⚡aide pour voir les commandes disponibles' })
                 }
-
-
                 console.log(message.key.remoteJid, texte)
+            }
+
+            const estImage = message.message?.imageMessage
+            const estVideo = message.message?.videoMessage
+            if (estImage || estVideo) {
+                const dossier = path.join('media', message.key.remoteJid)
+                const date = new Date().toISOString().replace(/:/g,'-')
+                const extension = estImage?'jpg':'mp4'
+                const buffer = await downloadMediaMessage(message, 'buffer', {})
+                const cheminFichier = path.join(dossier, `${date}.${extension}`)
+                
+                fs.mkdirSync(dossier, {recursive:true})
+                fs.writeFileSync(cheminFichier, buffer)
+                console.log('Media sauvegarder :', cheminFichier)
+              
+            }
+
+            const estVueUnique = message.message?.viewOnceMessageV2 || message.key?.isViewOnce
+            if(estVueUnique){
+                console.log('Médias vue unique reçu de :', message.key.remoteJid,)
             }
         }
     })
