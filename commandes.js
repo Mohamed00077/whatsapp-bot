@@ -1,5 +1,21 @@
 const {evaluate} = require('mathjs')
+const fs = require('fs')
+const NOTES_FICHIER = 'notes.json'
 
+function chargeNote(){
+    if(fs.existsSync(NOTES_FICHIER)){
+      const contenu=  fs.readFileSync(NOTES_FICHIER, 'utf-8')
+      return JSON.parse(contenu)
+
+    }else{
+        return {}
+    }
+}
+
+function sauvegardeNote(note){
+    const saveNote = JSON.stringify(note)
+    fs.writeFileSync(NOTES_FICHIER, saveNote)
+}
 //Tableau de commande dynamique
 const commandes = {
     ping: {
@@ -38,6 +54,32 @@ const commandes = {
            }catch{
             await socket.sendMessage(remoteJid, {text: "Expression invalide, réessaie."})
            }
+        }
+    },
+    note:{
+        description: 'Ajoute une note pour la retrouver plus tard : ⚡note <texte>',
+        execute: async (socket, remoteJid, args)=>{
+            const texte = args.join(' ')
+            const notes = chargeNote()
+            notes[remoteJid]= notes[remoteJid]|| []
+            notes[remoteJid].push(texte)
+            sauvegardeNote(notes)
+            await socket.sendMessage(remoteJid, {text: `Note ajoutée : ${texte}`})
+        }
+    },
+    notes :{
+        description: 'Voire toutes les notes enregistrer pour cette discution !',
+        execute: async(socket, remoteJid,args)=>{
+            const notes = chargeNote()
+            const mesNotes = notes[remoteJid]
+            if(!mesNotes || mesNotes.length ===0){
+                await socket.sendMessage(remoteJid, {text: "Aucune note enregistrer pour cette discussion"})
+                return
+            }
+            const liste = mesNotes.map((note, index) =>{
+                return `${index +1} : ${note}`
+            }).join('\n')
+            await socket.sendMessage(remoteJid, {text: liste})
         }
     }
 
