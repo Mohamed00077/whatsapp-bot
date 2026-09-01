@@ -34,10 +34,10 @@ async function startBot() {
         const { messages, type } = data
         if (type !== 'notify') { return }
         for (const message of messages) {
-            if (message.key.fromMe || message.key.remoteJid === 'status@broadcast') {
+            const texte = message.message?.conversation || message.message?.extendedTextMessage?.text || message?.message?.imageMessage?.caption
+            if (message.key.remoteJid === 'status@broadcast' || message.key.fromMe && !texte?.startsWith('⚡')) {
                 continue
             }
-            const texte = message.message?.conversation || message.message?.extendedTextMessage?.text || message?.message?.imageMessage?.caption
             if (texte?.startsWith('⚡')) {
                 const texteSanPrefixe = texte.slice(1)
                 const [commande, ...arrgs] = texteSanPrefixe.split(' ')
