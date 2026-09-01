@@ -37,7 +37,7 @@ async function startBot() {
             if (message.key.fromMe || message.key.remoteJid === 'status@broadcast') {
                 continue
             }
-            const texte = message.message?.conversation || message.message?.extendedTextMessage?.text
+            const texte = message.message?.conversation || message.message?.extendedTextMessage?.text || message?.message?.imageMessage?.caption
             if (texte?.startsWith('⚡')) {
                 const texteSanPrefixe = texte.slice(1)
                 const [commande, ...arrgs] = texteSanPrefixe.split(' ')
@@ -46,7 +46,7 @@ async function startBot() {
 
                 const cmd = commandes[commandeNormalisee]
                 if (cmd) {
-                    await cmd.execute(socket, message.key.remoteJid, arrgs)
+                    await cmd.execute(socket, message.key.remoteJid, arrgs, message)
                 } else {
                     await socket.sendMessage(message.key.remoteJid, { text: 'Commande inconnue, tape ⚡aide pour voir les commandes disponibles' })
                 }

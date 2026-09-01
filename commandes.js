@@ -1,18 +1,20 @@
-const {evaluate} = require('mathjs')
+const { downloadMediaMessage } = require('@whiskeysockets/baileys')
+const { evaluate} = require('mathjs')
+const sharp = require('sharp')
 const fs = require('fs')
 const NOTES_FICHIER = 'notes.json'
 
-function chargeNote(){
-    if(fs.existsSync(NOTES_FICHIER)){
-      const contenu=  fs.readFileSync(NOTES_FICHIER, 'utf-8')
-      return JSON.parse(contenu)
+function chargeNote() {
+    if (fs.existsSync(NOTES_FICHIER)) {
+        const contenu = fs.readFileSync(NOTES_FICHIER, 'utf-8')
+        return JSON.parse(contenu)
 
-    }else{
+    } else {
         return {}
     }
 }
 
-function sauvegardeNote(note){
+function sauvegardeNote(note) {
     const saveNote = JSON.stringify(note)
     fs.writeFileSync(NOTES_FICHIER, saveNote)
 }
@@ -20,69 +22,93 @@ function sauvegardeNote(note){
 const commandes = {
     ping: {
         description: 'Vérifie que le bot répond',
-        execute: async (socket, remoteJid, args) => {
+        execute: async (socket, remoteJid, args, message) => {
             await socket.sendMessage(remoteJid, { text: 'Pong !' })
         }
     },
-    aide:{
-        description :"menu de commande disponible",
-        execute : async(socket, remoteJid, args)=>{
-            const liste = Object.entries(commandes).map(([nom,details])=>{
+    aide: {
+        description: "menu de commande disponible",
+        execute: async (socket, remoteJid, args, message) => {
+            const liste = Object.entries(commandes).map(([nom, details]) => {
                 return `⚡${nom} - ${details.description}`
             }).join('\n')
-            await socket.sendMessage(remoteJid, {text: liste})
+            await socket.sendMessage(remoteJid, { text: liste })
         }
     },
-    uptime:{
+    uptime: {
         description: "Temps écoulé depuis le demarrage du bot",
-        execute: async(socket, remoteJid, args)=>{
-            const seconde= process.uptime()
-            const heure = Math.floor(seconde/3600)
-            const minuteRestante = Math.floor((seconde % 3600)/60)
+        execute: async (socket, remoteJid, args, message) => {
+            const seconde = process.uptime()
+            const heure = Math.floor(seconde / 3600)
+            const minuteRestante = Math.floor((seconde % 3600) / 60)
             const secondeRestante = Math.floor(seconde % 60)
-            await socket.sendMessage(remoteJid, {text:`Le bot tourne depuis ${heure}h ${minuteRestante}min ${secondeRestante}s`})
+            await socket.sendMessage(remoteJid, { text: `Le bot tourne depuis ${heure}h ${minuteRestante}min ${secondeRestante}s` })
 
         }
     },
-    calc:{
+    calc: {
         description: "Mini calculatrice pour effectuer rapidement les opérations de base",
-        execute: async(socket, remoteJid, args)=>{
-           const entrer = args.join(' ')
-           try{
-            const resultat =evaluate(entrer)
-            await socket.sendMessage(remoteJid, {text: `Résultat: ${resultat}`})
-           }catch{
-            await socket.sendMessage(remoteJid, {text: "Expression invalide, réessaie."})
-           }
+        execute: async (socket, remoteJid, args, message) => {
+            const entrer = args.join(' ')
+            try {
+                const resultat = evaluate(entrer)
+                await socket.sendMessage(remoteJid, { text: `Résultat: ${resultat}` })
+            } catch {
+                await socket.sendMessage(remoteJid, { text: "Expression invalide, réessaie." })
+            }
         }
     },
-    note:{
+    note: {
         description: 'Ajoute une note pour la retrouver plus tard : ⚡note <texte>',
-        execute: async (socket, remoteJid, args)=>{
+        execute: async (socket, remoteJid, args, message) => {
             const texte = args.join(' ')
             const notes = chargeNote()
-            notes[remoteJid]= notes[remoteJid]|| []
+            notes[remoteJid] = notes[remoteJid] || []
             notes[remoteJid].push(texte)
             sauvegardeNote(notes)
-            await socket.sendMessage(remoteJid, {text: `Note ajoutée : ${texte}`})
+            await socket.sendMessage(remoteJid, { text: `Note ajoutée : ${texte}` })
         }
     },
-    notes :{
+    notes: {
         description: 'Voire toutes les notes enregistrer pour cette discution !',
-        execute: async(socket, remoteJid,args)=>{
+        execute: async (socket, remoteJid, args, message) => {
             const notes = chargeNote()
             const mesNotes = notes[remoteJid]
-            if(!mesNotes || mesNotes.length ===0){
-                await socket.sendMessage(remoteJid, {text: "Aucune note enregistrer pour cette discussion"})
+            if (!mesNotes || mesNotes.length === 0) {
+                await socket.sendMessage(remoteJid, { text: "Aucune note enregistrer pour cette discussion" })
                 return
             }
-            const liste = mesNotes.map((note, index) =>{
-                return `${index +1} : ${note}`
+            const liste = mesNotes.map((note, index) => {
+                return `${index + 1} : ${note}`
             }).join('\n')
-            await socket.sendMessage(remoteJid, {text: liste})
+            await socket.sendMessage(remoteJid, { text: liste })
         }
+    },
+    sticker: {
+        description: 'convertir les images en sticker',
+        execute: async (socket, remoteJid, args, message) => {
+            try {
+                const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage
+                let messageAtraiter
+                if(quotedMessage?.imageMessage){
+                    messageAtraiter = {key: message.key, message:quotedMessage}
+                }else{
+                    messageAtraiter = message
+                }
+                const buffer = await downloadMediaMessage(messageAtraiter, 'buffer', {})
+                const stickerBuffer = await sharp(buffer)
+                    .resize(512, 512, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+                    .webp()
+                    .toBuffer()
+                await socket.sendMessage(remoteJid, { sticker: stickerBuffer })
+            } catch {
+                await socket.sendMessage(remoteJid, {text : "Envoyez une image à convertir" })
+             }
+
+        }
+
     }
 
 }
 
-module.exports= commandes
+module.exports = commandes
