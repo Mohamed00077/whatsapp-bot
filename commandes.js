@@ -1,5 +1,5 @@
 const { downloadMediaMessage } = require('@whiskeysockets/baileys')
-const { evaluate} = require('mathjs')
+const { evaluate } = require('mathjs')
 const sharp = require('sharp')
 const fs = require('fs')
 const NOTES_FICHIER = 'notes.json'
@@ -90,9 +90,9 @@ const commandes = {
             try {
                 const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage
                 let messageAtraiter
-                if(quotedMessage?.imageMessage){
-                    messageAtraiter = {key: message.key, message:quotedMessage}
-                }else{
+                if (quotedMessage?.imageMessage) {
+                    messageAtraiter = { key: message.key, message: quotedMessage }
+                } else {
                     messageAtraiter = message
                 }
                 const buffer = await downloadMediaMessage(messageAtraiter, 'buffer', {})
@@ -102,13 +102,37 @@ const commandes = {
                     .toBuffer()
                 await socket.sendMessage(remoteJid, { sticker: stickerBuffer })
             } catch {
-                await socket.sendMessage(remoteJid, {text : "Envoyez une image à convertir" })
-             }
+                await socket.sendMessage(remoteJid, { text: "Envoyez une image à convertir" })
+            }
+        }
+    },
+
+    traduire: {
+        description: "Traduire du texte EN<==>FR",
+        execute: async (socket, remoteJid, args, message) => {
+            const [langueSource, langueCible, ...motsTexte] = args
+
+            const objetCite = message.message?.extendedTextMessage?.contextInfo?.quotedMessage
+            const quotedMessage = objetCite?.conversation || objetCite?.extendedTextMessage?.text
+            let texteFinale = motsTexte.join(' ')
+            if (motsTexte.length === 0 && quotedMessage) {
+                texteFinale = quotedMessage
+            }
+
+
+            const textATraduire = encodeURIComponent(texteFinale)
+            const url = `https://api.mymemory.translated.net/get?q=${textATraduire}&langpair=${langueSource}|${langueCible}`
+            try {
+                const reponse = await fetch(url)
+                const donnes = await reponse.json()
+                const traduction = donnes.responseData.translatedText
+                await socket.sendMessage(remoteJid, { text: traduction })
+            } catch {
+                await socket.sendMessage(remoteJid, { text: "Erreur lors de la traduction" })
+            }
 
         }
-
     }
-
 }
 
 module.exports = commandes
