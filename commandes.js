@@ -4,6 +4,7 @@ const sharp = require('sharp')
 const fs = require('fs')
 const path = require('path')
 const { text } = require('stream/consumers')
+const vu = require('./vu')
 const NOTES_FICHIER = 'notes.json'
 
 
@@ -142,27 +143,32 @@ const commandes = {
 
 
     statut: {
-    description: 'Sauvegarde un statut avec cette commande juste en y répondant',
-    execute: async (socket, remoteJid, args, message) => {
-        const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage
-        if(!quotedMessage?.imageMessage && !quotedMessage?.videoMessage){
-           await socket.sendMessage(remoteJid, {text: "Erreur"})
-           return
+        description: 'Sauvegarde un statut avec cette commande juste en y répondant',
+        execute: async (socket, remoteJid, args, message) => {
+            const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage
+            if (!quotedMessage?.imageMessage && !quotedMessage?.videoMessage) {
+                await socket.sendMessage(remoteJid, { text: "Erreur" })
+                return
+            }
+            const estImage = quotedMessage?.imageMessage
+            const estVideo = quotedMessage?.videoMessage
+            const statut = { key: message.key, message: quotedMessage }
+            const buffer = await downloadMediaMessage(statut, 'buffer', {})
+            const date = new Date().toISOString().replace(/:/g, '-')
+            const extension = estImage ? 'jpg' : 'mp4'
+            const dossier = path.join('statut', message.key.remoteJid)
+            const cheminFichier = path.join(dossier, `${date}.${extension}`)
+            fs.mkdirSync(dossier, { recursive: true })
+            fs.writeFileSync(cheminFichier, buffer)
+            console.log('Media sauvegarder :', cheminFichier)
+            await socket.sendMessage(remoteJid, { text: "Statut sauvegardé !🤞" })
         }
-        const estImage = quotedMessage?.imageMessage
-        const estVideo= quotedMessage?.videoMessage
-        const statut = {key: message.key, message: quotedMessage}
-        const buffer = await downloadMediaMessage(statut, 'buffer', {})
-        const date = new Date().toISOString().replace(/:/g,'-')
-        const extension = estImage?'jpg':'mp4'
-        const dossier = path.join('statut', message.key.remoteJid)
-        const cheminFichier= path.join(dossier, `${date}.${extension}`)
-        fs.mkdirSync(dossier, {recursive:true})
-        fs.writeFileSync(cheminFichier, buffer)
-        console.log('Media sauvegarder :', cheminFichier)
-        await socket.sendMessage(remoteJid, {text : "Statut sauvegardé !🤞"})
+    },
+    vu:{
+        description: 'Récupère un média vue unique : réponds au message reçu avec ⚡vu',
+        execute : vu.execute
     }
-}
+
 }
 
 module.exports = commandes

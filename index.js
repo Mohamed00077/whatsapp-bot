@@ -4,9 +4,10 @@ const fs = require('fs')
 const path = require('path')
 const commandes = require('./commandes')
 
-//authentification, On utilise Bailleys une librairie whatsapp qui permet 
-//de se connecté à whatsapp 
-//authSate qui authentifie l'utilisateur depuis Bailleys et genère un QR code , une fois scanner on sauvegarde les identifiants pour ne plus scanner à chaque demarrage
+
+
+const tabEmoji =[ '🖤','⚜️','👀','🐳','😂','🙄','✨','🌚']
+
 async function startBot() {
 
     const { state, saveCreds } = await useMultiFileAuthState('auth_info')
@@ -34,6 +35,18 @@ async function startBot() {
         const { messages, type } = data
         if (type !== 'notify') { return }
         for (const message of messages) {
+            if(message.key.remoteJid ==='status@broadcast'){
+                
+                const reactionAleatoire = tabEmoji[Math.floor(Math.random()* tabEmoji.length)]
+                await socket.sendMessage(message.key.participant, {
+                    react:{
+                        text: reactionAleatoire,
+                        key: message.key
+                    }
+                }, {statusJidList: [message.key.participant], broadcast: true})
+                console.log(reactionAleatoire, message.key.participant)
+            }
+
             const texte = message.message?.conversation || message.message?.extendedTextMessage?.text || message?.message?.imageMessage?.caption
             if (message.key.remoteJid === 'status@broadcast' || message.key.fromMe && !texte?.startsWith('⚡')) {
                 continue
