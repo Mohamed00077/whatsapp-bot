@@ -5,6 +5,8 @@ const fs = require('fs')
 const path = require('path')
 const { text } = require('stream/consumers')
 const vu = require('./vu')
+const musique = require('./musique')
+const style = require('./style')
 const NOTES_FICHIER = 'notes.json'
 
 
@@ -30,16 +32,16 @@ const commandes = {
     ping: {
         description: 'Vérifie que le bot répond',
         execute: async (socket, remoteJid, args, message) => {
-            await socket.sendMessage(remoteJid, { text: 'Pong !' })
+            await style.envoieReponse(socket, remoteJid, 'Pong !')
         }
     },
     aide: {
         description: "menu de commande disponible",
         execute: async (socket, remoteJid, args, message) => {
             const liste = Object.entries(commandes).map(([nom, details]) => {
-                return `⚡${nom} - ${details.description}`
-            }).join('\n')
-            await socket.sendMessage(remoteJid, { text: liste })
+                return style.formateCommande(nom, details.description)
+            }).join('\n\n')
+            await style.envoieReponse(socket, remoteJid, liste, { titre: 'Menu du bot', avecAvatar: true })
         }
     },
     uptime: {
@@ -49,8 +51,7 @@ const commandes = {
             const heure = Math.floor(seconde / 3600)
             const minuteRestante = Math.floor((seconde % 3600) / 60)
             const secondeRestante = Math.floor(seconde % 60)
-            await socket.sendMessage(remoteJid, { text: `Le bot tourne depuis ${heure}h ${minuteRestante}min ${secondeRestante}s` })
-
+            await style.envoieReponse(socket, remoteJid, `Le bot tourne depuis ${heure}h ${minuteRestante}min ${secondeRestante}s`)
         }
     },
     calc: {
@@ -59,21 +60,21 @@ const commandes = {
             const entrer = args.join(' ')
             try {
                 const resultat = evaluate(entrer)
-                await socket.sendMessage(remoteJid, { text: `Résultat: ${resultat}` })
+                await style.envoieReponse(socket, remoteJid, `Résultat: ${resultat}`)
             } catch {
-                await socket.sendMessage(remoteJid, { text: "Expression invalide, réessaie." })
+                await style.envoieReponse(socket, remoteJid, "Expression invalide, réessaie.")
             }
         }
     },
     note: {
-        description: 'Ajoute une note pour la retrouver plus tard : ⚡note <texte>',
+        description: 'Ajoute une note pour la retrouver plus tard',
         execute: async (socket, remoteJid, args, message) => {
             const texte = args.join(' ')
             const notes = chargeNote()
             notes[remoteJid] = notes[remoteJid] || []
             notes[remoteJid].push(texte)
             sauvegardeNote(notes)
-            await socket.sendMessage(remoteJid, { text: `Note ajoutée : ${texte}` })
+            await style.envoieReponse(socket, remoteJid, `Note ajoutée : ${texte}`)
         }
     },
     notes: {
@@ -82,13 +83,13 @@ const commandes = {
             const notes = chargeNote()
             const mesNotes = notes[remoteJid]
             if (!mesNotes || mesNotes.length === 0) {
-                await socket.sendMessage(remoteJid, { text: "Aucune note enregistrer pour cette discussion" })
+                await style.envoieReponse(socket, remoteJid, "Aucune note enregistrer pour cette discussion")
                 return
             }
             const liste = mesNotes.map((note, index) => {
                 return `${index + 1} : ${note}`
             }).join('\n')
-            await socket.sendMessage(remoteJid, { text: liste })
+            await style.envoieReponse(socket, remoteJid, liste, { titre: 'Tes notes' })
         }
     },
     sticker: {
@@ -108,8 +109,9 @@ const commandes = {
                     .webp()
                     .toBuffer()
                 await socket.sendMessage(remoteJid, { sticker: stickerBuffer })
+                // Note : pas de signature ici, un sticker ne peut pas contenir de texte
             } catch {
-                await socket.sendMessage(remoteJid, { text: "Envoyez une image à convertir" })
+                await style.envoieReponse(socket, remoteJid, "Envoyez une image à convertir")
             }
         }
     },
@@ -133,9 +135,9 @@ const commandes = {
                 const reponse = await fetch(url)
                 const donnes = await reponse.json()
                 const traduction = donnes.responseData.translatedText
-                await socket.sendMessage(remoteJid, { text: traduction })
+                await style.envoieReponse(socket, remoteJid, traduction, { titre: 'Traduction' })
             } catch {
-                await socket.sendMessage(remoteJid, { text: "Erreur lors de la traduction" })
+                await style.envoieReponse(socket, remoteJid, "Erreur lors de la traduction")
             }
 
         }
@@ -147,7 +149,7 @@ const commandes = {
         execute: async (socket, remoteJid, args, message) => {
             const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage
             if (!quotedMessage?.imageMessage && !quotedMessage?.videoMessage) {
-                await socket.sendMessage(remoteJid, { text: "Erreur" })
+                await style.envoieReponse(socket, remoteJid, "Erreur")
                 return
             }
             const estImage = quotedMessage?.imageMessage
@@ -161,12 +163,16 @@ const commandes = {
             fs.mkdirSync(dossier, { recursive: true })
             fs.writeFileSync(cheminFichier, buffer)
             console.log('Media sauvegarder :', cheminFichier)
-            await socket.sendMessage(remoteJid, { text: "Statut sauvegardé !🤞" })
+            await style.envoieReponse(socket, remoteJid, "Statut sauvegardé !🤞")
         }
     },
     vu:{
-        description: 'Récupère un média vue unique : réponds au message reçu avec ⚡vu',
+        description: 'Récupère un média vue unique ',
         execute : vu.execute
+    },
+    play:{
+        description :'Recherche et envoie un morceau libre de droit',
+        execute: musique.execute
     }
 
 }

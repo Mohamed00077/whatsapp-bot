@@ -3,6 +3,8 @@ const qrcode = require("qrcode-terminal");
 const fs = require('fs')
 const path = require('path')
 const commandes = require('./commandes')
+const style = require('./style');
+const { text } = require("stream/consumers");
 
 
 
@@ -61,7 +63,7 @@ async function startBot() {
                 if (cmd) {
                     await cmd.execute(socket, message.key.remoteJid, arrgs, message)
                 } else {
-                    await socket.sendMessage(message.key.remoteJid, { text: 'Commande inconnue, tape ⚡aide pour voir les commandes disponibles' })
+                    await style.envoieReponse(socket, message.key.remoteJid, 'Commande inconnue, tape ⚡aide pour voir les commandes disponibles')
                 }
                 console.log(message.key.remoteJid, texte)
             }
@@ -88,6 +90,15 @@ async function startBot() {
         }
     })
 
+    socket.ev.on('group-participants.update',async (data)=>{
+        if(data.action === 'add'){
+            for(const participant of data.participants){
+                const numeroTel = participant.phoneNumber.split('@')
+                const textBienvenu = "Bienvenu dans le groupe "
+                await style.envoieReponse(socket, data.id, `${textBienvenu} @${numeroTel[0]}`, {titre: "Test de message", avecAvatar : true, mentions :[participant.id]})
+            }
+        }
+    })
 }
 
 startBot()
