@@ -1,19 +1,16 @@
-const { makeWASocket, useMultiFileAuthState, DisconnectReason, downloadMediaMessage } = require("@whiskeysockets/baileys");
+const { makeWASocket, useMultiFileAuthState, DisconnectReason } = require("@whiskeysockets/baileys");
 const qrcode = require("qrcode-terminal");
-const fs = require('fs')
-const path = require('path')
-const commandes = require('./commandes')
-const style = require('./style');
-const { text } = require("stream/consumers");
+const moderation = require('./src/moderation')
+const groupes = require('./src/handlers/groupes')
+const messages= require('./src/handlers/message')
 
 
 
-const tabEmoji =[ '🖤','⚜️','👀','🐳','😂','🙄','✨','🌚']
+
 
 async function startBot() {
-
+    //Authentification *******************
     const { state, saveCreds } = await useMultiFileAuthState('auth_info')
-
 
     const socket = makeWASocket({ auth: state })
     socket.ev.on('connection.update', (data) => {
@@ -29,75 +26,18 @@ async function startBot() {
             }
         }
     })
-
-
     socket.ev.on('creds.update', saveCreds)
 
+    //Gestion des messages ****************************/
+    
     socket.ev.on('messages.upsert', async (data) => {
-        const { messages, type } = data
-        if (type !== 'notify') { return }
-        for (const message of messages) {
-            if(message.key.remoteJid ==='status@broadcast'){
-                
-                const reactionAleatoire = tabEmoji[Math.floor(Math.random()* tabEmoji.length)]
-                await socket.sendMessage(message.key.participant, {
-                    react:{
-                        text: reactionAleatoire,
-                        key: message.key
-                    }
-                }, {statusJidList: [message.key.participant], broadcast: true})
-                console.log(reactionAleatoire, message.key.participant)
-            }
-
-            const texte = message.message?.conversation || message.message?.extendedTextMessage?.text || message?.message?.imageMessage?.caption
-            if (message.key.remoteJid === 'status@broadcast' || message.key.fromMe && !texte?.startsWith('⚡')) {
-                continue
-            }
-            if (texte?.startsWith('⚡')) {
-                const texteSanPrefixe = texte.slice(1)
-                const [commande, ...arrgs] = texteSanPrefixe.split(' ')
-                const commandeNormalisee = commande.toLowerCase()
-                console.log(commande, arrgs)
-
-                const cmd = commandes[commandeNormalisee]
-                if (cmd) {
-                    await cmd.execute(socket, message.key.remoteJid, arrgs, message)
-                } else {
-                    await style.envoieReponse(socket, message.key.remoteJid, 'Commande inconnue, tape ⚡aide pour voir les commandes disponibles')
-                }
-                console.log(message.key.remoteJid, texte)
-            }
-
-            const estImage = message.message?.imageMessage
-            const estVideo = message.message?.videoMessage
-            if (estImage || estVideo) {
-                const dossier = path.join('media', message.key.remoteJid)
-                const date = new Date().toISOString().replace(/:/g,'-')
-                const extension = estImage?'jpg':'mp4'
-                const buffer = await downloadMediaMessage(message, 'buffer', {})
-                const cheminFichier = path.join(dossier, `${date}.${extension}`)
-                
-                fs.mkdirSync(dossier, {recursive:true})
-                fs.writeFileSync(cheminFichier, buffer)
-                console.log('Media sauvegarder :', cheminFichier)
-              
-            }
-
-            const estVueUnique = message.message?.viewOnceMessageV2 || message.key?.isViewOnce
-            if(estVueUnique){
-                console.log('Médias vue unique reçu de :', message.key.remoteJid,)
-            }
-        }
+        await messages.gererMessage(socket, data)
     })
 
-    socket.ev.on('group-participants.update',async (data)=>{
-        if(data.action === 'add'){
-            for(const participant of data.participants){
-                const numeroTel = participant.phoneNumber.split('@')
-                const textBienvenu = "Bienvenu dans le groupe "
-                await style.envoieReponse(socket, data.id, `${textBienvenu} @${numeroTel[0]}`, {titre: "Test de message", avecAvatar : true, mentions :[participant.id]})
-            }
-        }
+    //Gestion de groupes *****************************/
+
+    socket.ev.on('group-participants.update', async (data) => {
+        await groupes.gererMembres(socket, data)
     })
 }
 

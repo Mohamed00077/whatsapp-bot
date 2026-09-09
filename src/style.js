@@ -4,12 +4,12 @@ const path = require('path')
 // ==================== CONFIGURATION ====================
 // Modifie ces valeurs pour personnaliser le style de ton bot
 
-const SIGNATURE = '\n\n_🤖 Réponse automatique • Bot WhatsApp_'
+const SIGNATURE = '\n\n_🤖 Réponse automatique • Bot Momo_'
 
 // Dépose toutes tes images d'avatar (png/jpg) dans ce dossier.
 // Le bot en choisira une au hasard à chaque réponse, envoyée comme image
 // avec le texte attaché en légende (un seul message).
-const DOSSIER_AVATARS = path.join(__dirname, 'assets', 'avatars')
+const DOSSIER_AVATARS = path.join(__dirname, '..','assets', 'avatars')
 
 // =========================================================
 

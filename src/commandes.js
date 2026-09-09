@@ -3,11 +3,10 @@ const { evaluate } = require('mathjs')
 const sharp = require('sharp')
 const fs = require('fs')
 const path = require('path')
-const { text } = require('stream/consumers')
 const vu = require('./vu')
 const musique = require('./musique')
 const style = require('./style')
-const NOTES_FICHIER = 'notes.json'
+const NOTES_FICHIER = path.join(__dirname, '..', 'data', 'notes.json')
 
 
 
@@ -89,7 +88,7 @@ const commandes = {
             const liste = mesNotes.map((note, index) => {
                 return `${index + 1} : ${note}`
             }).join('\n')
-            await style.envoieReponse(socket, remoteJid, liste, { titre: 'Tes notes' })
+            await style.envoieReponse(socket, remoteJid, liste, { titre: 'Tes notes', avecAvatar: true })
         }
     },
     sticker: {
