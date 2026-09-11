@@ -1,6 +1,5 @@
 const { makeWASocket, useMultiFileAuthState, DisconnectReason } = require("@whiskeysockets/baileys");
 const qrcode = require("qrcode-terminal");
-const moderation = require('./src/moderation')
 const groupes = require('./src/handlers/groupes')
 const messages= require('./src/handlers/message')
 
@@ -29,7 +28,7 @@ async function startBot() {
     socket.ev.on('creds.update', saveCreds)
 
     //Gestion des messages ****************************/
-    
+
     socket.ev.on('messages.upsert', async (data) => {
         await messages.gererMessage(socket, data)
     })

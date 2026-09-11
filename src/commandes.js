@@ -108,7 +108,6 @@ const commandes = {
                     .webp()
                     .toBuffer()
                 await socket.sendMessage(remoteJid, { sticker: stickerBuffer })
-                // Note : pas de signature ici, un sticker ne peut pas contenir de texte
             } catch {
                 await style.envoieReponse(socket, remoteJid, "Envoyez une image à convertir")
             }

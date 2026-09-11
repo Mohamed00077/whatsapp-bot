@@ -11,4 +11,5 @@ const style =require('../style')
          }
 }
 
+
 module.exports = {gererMembres}
