@@ -4,7 +4,7 @@ const moderation = require('../moderation')
 const style = require('../style')
 const fs = require('fs')
 const path = require('path');
-
+const ia = require('../ia')
 
 
 
@@ -49,6 +49,19 @@ async function gererMessage(socket, data) {
             }
             console.log(message.key.remoteJid, texte)
         }
+        //
+        else if (!message.key.remoteJid.endsWith('@g.us') && message.key.remoteJid !== 'status@broadcast') {
+            const presence = ia.chargeStatutAbsent()
+            if (presence.actif) {
+                const nouveauMessage = ia.chargeConversation()
+                nouveauMessage[message.key.remoteJid] = nouveauMessage[message.key.remoteJid] || []
+                nouveauMessage[message.key.remoteJid].push({ role: 'user', content: texte })
+                const reponse = await ia.demanderReponse(nouveauMessage[message.key.remoteJid])
+                nouveauMessage[message.key.remoteJid].push({ role: 'assistant', content: reponse })
+                ia.sauvegardeConversation(nouveauMessage)
+                await style.envoieReponse(socket, message.key.remoteJid, `${reponse}`, { titre: "Réponse automatique IA" })
+            }
+        }
 
         //Sauvegarde automatique des médias reçus
 
@@ -73,39 +86,39 @@ async function gererMessage(socket, data) {
         }
 
         //Ici on détecte les liens && les vocaux envoyé dans les groupe pour les supprimer automatiquement
-        if(message.key.remoteJid?.endsWith('@g.us')){
-            const infractions= moderation.chargeInfraction()
+        if (message.key.remoteJid?.endsWith('@g.us')) {
+            const infractions = moderation.chargeInfraction()
             const verificationInfraction = infractions[message.key.remoteJid]?.[message.key?.participant]
-            if(verificationInfraction?.muteJusqua && verificationInfraction?.muteJusqua >Date.now() ){
-                await socket.sendMessage(message.key.remoteJid, {delete: message.key})
-                continue 
+            if (verificationInfraction?.muteJusqua && verificationInfraction?.muteJusqua > Date.now()) {
+                await socket.sendMessage(message.key.remoteJid, { delete: message.key })
+                continue
             }
-            if(moderation.contientLien(texte) ||message.message?.audioMessage?.ptt === true){
+            if (moderation.contientLien(texte) || message.message?.audioMessage?.ptt === true) {
                 const user = message.key?.participant
                 const numeroAffiche = user?.split('@') || ['quelqu\'un']
                 const messageeAvertissement = "Ce genre de contenu est interdit dans ce groupe !!!!"
-               await socket.sendMessage(message.key.remoteJid, {delete: message.key}) 
-               const infractions= moderation.chargeInfraction()
-               infractions[message.key.remoteJid] = infractions[message.key.remoteJid]|| {}
-               infractions[message.key.remoteJid][user]= infractions[message.key.remoteJid][user] || {count : 0}
-               infractions[message.key.remoteJid][user].count = infractions[message.key.remoteJid][user].count +1
-               moderation.sauvegardeInfraction(infractions)
-               const nombreInfraction = infractions[message.key.remoteJid][user].count
-               if(nombreInfraction ===1){
-                await style.envoieReponse(socket, message.key.remoteJid, `${messageeAvertissement} @${numeroAffiche[0]}`, {titre: 'infraction', avecAvatar : true, mentions :[user]} )
-               }else if(nombreInfraction === 2){
-                infractions[message.key.remoteJid][user].muteJusqua = Date.now() + (60*60*1000)
+                await socket.sendMessage(message.key.remoteJid, { delete: message.key })
+                const infractions = moderation.chargeInfraction()
+                infractions[message.key.remoteJid] = infractions[message.key.remoteJid] || {}
+                infractions[message.key.remoteJid][user] = infractions[message.key.remoteJid][user] || { count: 0 }
+                infractions[message.key.remoteJid][user].count = infractions[message.key.remoteJid][user].count + 1
                 moderation.sauvegardeInfraction(infractions)
-                await style.envoieReponse(socket, message.key.remoteJid, `Utilisateur @${numeroAffiche[0]} mutée pour 1h`)
-               }else{
-                await socket.groupParticipantsUpdate(message.key.remoteJid, [user], 'remove')
-                await style.envoieReponse(socket, message.key.remoteJid, `Utilisateur @${numeroAffiche[0]} Bannie !`)
-               }
+                const nombreInfraction = infractions[message.key.remoteJid][user].count
+                if (nombreInfraction === 1) {
+                    await style.envoieReponse(socket, message.key.remoteJid, `${messageeAvertissement} @${numeroAffiche[0]}`, { titre: 'infraction', avecAvatar: true, mentions: [user] })
+                } else if (nombreInfraction === 2) {
+                    infractions[message.key.remoteJid][user].muteJusqua = Date.now() + (60 * 60 * 1000)
+                    moderation.sauvegardeInfraction(infractions)
+                    await style.envoieReponse(socket, message.key.remoteJid, `Utilisateur @${numeroAffiche[0]} mutée pour 1h`)
+                } else {
+                    await socket.groupParticipantsUpdate(message.key.remoteJid, [user], 'remove')
+                    await style.envoieReponse(socket, message.key.remoteJid, `Utilisateur @${numeroAffiche[0]} Bannie !`)
+                }
 
-               
+
             }
         }
-    
+
     }
 
 }

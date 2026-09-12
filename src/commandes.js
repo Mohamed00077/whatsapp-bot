@@ -4,6 +4,7 @@ const sharp = require('sharp')
 const fs = require('fs')
 const path = require('path')
 const vu = require('./vu')
+const ia = require('./ia')
 const musique = require('./musique')
 const style = require('./style')
 const NOTES_FICHIER = path.join(__dirname, '..', 'data', 'notes.json')
@@ -171,6 +172,16 @@ const commandes = {
     play:{
         description :'Recherche et envoie un morceau libre de droit',
         execute: musique.execute
+    },
+    absent :{
+        description: '........',
+        execute: async (socket, remoteJid, args, message)=>{
+            const actif = args.join(' ')
+            const presence =ia.chargeStatutAbsent()
+            presence.actif = (args[0] === 'on')
+            ia.sauvegardeStatutAbsent(presence)
+             await style.envoieReponse(socket, remoteJid, `Statut mis à jour : ${actif}`)
+        }
     }
 
 }
