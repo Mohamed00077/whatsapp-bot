@@ -1,1 +1,10 @@
-{"120363412526093006@g.us":["Nouvelle note"]}
+{
+  "120363412526093006@g.us": [
+    "Nouvelle note",
+    "test de l'indentation",
+    "deuxième test de l'indentation"
+  ],
+  "99489260040386@lid": [
+    "test de l'indentation"
+  ]
+}

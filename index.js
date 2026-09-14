@@ -1,3 +1,4 @@
+require('dotenv').config()
 const { makeWASocket, useMultiFileAuthState, DisconnectReason } = require("@whiskeysockets/baileys");
 const qrcode = require("qrcode-terminal");
 const groupes = require('./src/handlers/groupes')

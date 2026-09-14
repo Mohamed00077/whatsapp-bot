@@ -5,6 +5,7 @@ const fs = require('fs')
 const path = require('path')
 const vu = require('./vu')
 const ia = require('./ia')
+const moderation = require('./moderation')
 const musique = require('./musique')
 const style = require('./style')
 const NOTES_FICHIER = path.join(__dirname, '..', 'data', 'notes.json')
@@ -24,7 +25,7 @@ function chargeNote() {
 
 
 function sauvegardeNote(note) {
-    const saveNote = JSON.stringify(note)
+    const saveNote = JSON.stringify(note, null, 2)
     fs.writeFileSync(NOTES_FICHIER, saveNote)
 }
 //Tableau de commande dynamique
@@ -174,13 +175,23 @@ const commandes = {
         execute: musique.execute
     },
     absent :{
-        description: '........',
+        description: '...',
         execute: async (socket, remoteJid, args, message)=>{
             const actif = args.join(' ')
             const presence =ia.chargeStatutAbsent()
             presence.actif = (args[0] === 'on')
             ia.sauvegardeStatutAbsent(presence)
              await style.envoieReponse(socket, remoteJid, `Statut mis à jour : ${actif}`)
+        }
+    },
+    moderation :{
+        description: '....',
+        execute: async(socket, remoteJid, args, message)=>{
+            const actif = args.join(' ')
+            const groupes = moderation.chargeModerationGroupes()
+            groupes[remoteJid] = (args[0] ==='on')
+            moderation.sauvegardeModerationGroupes(groupes)
+            await style.envoieReponse(socket, remoteJid, `Statut de groupe mis à jour : ${actif}`)
         }
     }
 

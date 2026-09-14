@@ -50,16 +50,20 @@ async function gererMessage(socket, data) {
             console.log(message.key.remoteJid, texte)
         }
         //
-        else if (!message.key.remoteJid.endsWith('@g.us') && message.key.remoteJid !== 'status@broadcast') {
+        else if (!message.key.remoteJid.endsWith('@g.us') && message.key.remoteJid !== 'status@broadcast' && !message.key.remoteJid.endsWith('@newsletter')) {
             const presence = ia.chargeStatutAbsent()
             if (presence.actif) {
+                if(message.message?.imageMessage || message.message?.stickerMessage || message.message?.audioMessage){
+                    await style.envoieReponse(socket, message.key.remoteJid, 'Désolé je ne peux pas encore traiter les images/stickers/messages vocaux, écris-moi plutôt !" ', { titre: "Réponse automatique IA", avecAvatar: true })
+                }else{
                 const nouveauMessage = ia.chargeConversation()
                 nouveauMessage[message.key.remoteJid] = nouveauMessage[message.key.remoteJid] || []
                 nouveauMessage[message.key.remoteJid].push({ role: 'user', content: texte })
                 const reponse = await ia.demanderReponse(nouveauMessage[message.key.remoteJid])
                 nouveauMessage[message.key.remoteJid].push({ role: 'assistant', content: reponse })
                 ia.sauvegardeConversation(nouveauMessage)
-                await style.envoieReponse(socket, message.key.remoteJid, `${reponse}`, { titre: "Réponse automatique IA" })
+                await style.envoieReponse(socket, message.key.remoteJid, `${reponse}`, { titre: "Réponse automatique assistante IA", avecAvatar: true  })
+                }
             }
         }
 
@@ -86,7 +90,8 @@ async function gererMessage(socket, data) {
         }
 
         //Ici on détecte les liens && les vocaux envoyé dans les groupe pour les supprimer automatiquement
-        if (message.key.remoteJid?.endsWith('@g.us')) {
+        const groupes = moderation.chargeModerationGroupes()
+        if (message.key.remoteJid?.endsWith('@g.us') && groupes[message.key.remoteJid] === true) {
             const infractions = moderation.chargeInfraction()
             const verificationInfraction = infractions[message.key.remoteJid]?.[message.key?.participant]
             if (verificationInfraction?.muteJusqua && verificationInfraction?.muteJusqua > Date.now()) {

@@ -8,6 +8,7 @@ function contientLien(texte){
 }
 
 const INFRACTION = path.join(__dirname, '..', 'data', 'infraction.json')
+const MODERATION_GROUPES = path.join(__dirname, '..', 'data', 'moderation-groupes.json')
 
 function chargeInfraction(){
         if(fs.existsSync(INFRACTION)){
@@ -18,8 +19,20 @@ function chargeInfraction(){
 
 
 function sauvegardeInfraction(nouvelleInfraction){
-        const infraction = JSON.stringify(nouvelleInfraction)
+        const infraction = JSON.stringify(nouvelleInfraction, null, 2)
         fs.writeFileSync(INFRACTION, infraction)
 }
 
-module.exports = {contientLien, chargeInfraction, sauvegardeInfraction}
+function chargeModerationGroupes(){
+        if(fs.existsSync(MODERATION_GROUPES)){
+                const contenu = fs.readFileSync(MODERATION_GROUPES, 'utf-8')
+                return JSON.parse(contenu)
+        }else{return{}}
+}
+
+function sauvegardeModerationGroupes(nouvelleInfraction){
+        const infraction = JSON.stringify(nouvelleInfraction, null, 2)
+        fs.writeFileSync(MODERATION_GROUPES, infraction)
+}
+
+module.exports = {contientLien, chargeInfraction, sauvegardeInfraction, chargeModerationGroupes, sauvegardeModerationGroupes}
