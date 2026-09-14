@@ -144,7 +144,7 @@ const commandes = {
     },
 
 
-    statut: {
+    save: {
         description: 'Sauvegarde un statut avec cette commande juste en y répondant',
         execute: async (socket, remoteJid, args, message) => {
             const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage
@@ -174,7 +174,7 @@ const commandes = {
         description :'Recherche et envoie un morceau libre de droit',
         execute: musique.execute
     },
-    absent :{
+    statut :{
         description: '...',
         execute: async (socket, remoteJid, args, message)=>{
             const actif = args.join(' ')
